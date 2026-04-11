@@ -1,5 +1,6 @@
 import datetime
 
+
 import pandas as pd
 
 
@@ -26,3 +27,15 @@ def excel_read_to_dict(path: str) -> list:
         return result
     except Exception:
         return []
+
+def list_of_field(table: list, key: str) -> list:
+    """Функция создает список уникальных значений поля таблицы"""
+    result_set = set()
+    for item in table:
+        target = item.get(key)
+        if target and str(target).lower() != 'nan':
+            result_set.add(target)
+    return list(result_set)
+
+
+

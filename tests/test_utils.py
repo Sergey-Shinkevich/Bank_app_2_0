@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from src.utils import excel_read_to_dict, greeting
+from src.utils import excel_read_to_dict, greeting, list_of_field
 
 
 @pytest.mark.parametrize(
@@ -78,3 +78,14 @@ def test_excel_read_to_dict_abnormal(mock_read: Mock) -> None:
     result = excel_read_to_dict("../data/transactions_excel.xlsx")
     assert result == []
     mock_read.assert_called_once_with("../data/transactions_excel.xlsx")
+
+def test_list_of_field_1(normal_data: list) -> None:
+    """Тест функции на нормальные данные"""
+    result = list_of_field(normal_data, "Статус")
+    result.sort()
+    assert result == ['FAILED', 'OK']
+
+def test_list_of_field_2(abnormal_data: list) -> None:
+    """Тест функции на не правильные данные"""
+    result = list_of_field(abnormal_data, "Статус")
+    assert result == []
