@@ -1,5 +1,7 @@
 import datetime
 
+import pandas as pd
+
 
 def greeting(hour: int | None = None) -> str:
     """Возвращает приветствие на основе переданного или текущего часа"""
@@ -16,4 +18,11 @@ def greeting(hour: int | None = None) -> str:
         return "Доброй ночи!"
 
 
-print(greeting(23))
+def excel_read_to_dict(path: str) -> list:
+    """Функция читает Excel-файл и возвращает список словарей"""
+    try:
+        excel_data = pd.read_excel(path)
+        result = excel_data.to_dict(orient="records")
+        return result
+    except Exception:
+        return []
