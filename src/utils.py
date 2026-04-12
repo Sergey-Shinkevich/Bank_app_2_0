@@ -50,11 +50,10 @@ def get_currency_rates(currencies: list) -> list:
     # Используем базовую валюту RUB, чтобы сразу видеть стоимость в рублях
     url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/RUB"
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=20)
         if response.status_code == 200:
             rates = response.json().get("conversion_rates", {})
-            # API дает: 1 RUB = X USD. Нам нужно наоборот: 1 USD = X RUB.
-            # Поэтому берем 1 / rates[currency]
+            # API дает: 1 RUB = X USD. Поэтому берем 1 / rates[currency]
             return [
                 {"currency": c, "rate": round(1 / rates[c], 2)}
                 for c in currencies if c in rates
@@ -64,21 +63,28 @@ def get_currency_rates(currencies: list) -> list:
     return []
 
 
-#def get_stock_prices(stocks: list) -> list:
-#    """Получает цены акций из внешнего API по тикерам"""
-#    api_key = os.getenv("FINANCIAL_MODELING_API_KEY")
-#    result = []
+def get_stock_prices(stocks: list) -> list:
+    api_key = os.getenv("TWELVE_DATA_API_KEY")
+    if not stocks:
+        return []
+    symbols = ",".join(stocks)
+    url = f"https://api.twelvedata.com/price?symbol={symbols}&apikey={api_key}"
+    try:
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        result = []
+        # Проверяем, что пришел словарь
+        if isinstance(data, dict):
+            for stock in stocks:
+                if stock in data:
+                    price = data[stock].get("price")
+                    if price:
+                        result.append({"stock": stock, "price": round(float(price), 2)})
+        return result
 
-#    for stock in stocks:
-#        url = f"https://financialmodelingprep.com/api/v3/quote/{stock}?apikey={api_key}"
-#        try:
-#            response = requests.get(url, timeout=5)
-#            if response.status_code == 200:
-#                data = response.json()
-#                if data:
-#                    result.append({"stock": stock, "price": data[0].get("price")})
-#        except Exception as e:
-#            print(f"Ошибка API акций для {stock}: {e}")
-#    return result
+    except Exception as e:
+        print(f"Ошибка при получении котировок: {e}")
+        return []
 
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from src.utils import greeting, list_of_field, excel_read_to_pandas, get_user_settings, get_currency_rates
+from src.utils import greeting, list_of_field, excel_read_to_pandas, get_user_settings, get_currency_rates, get_stock_prices
 
 
 def home_page() -> dict:
@@ -26,7 +26,8 @@ def home_page() -> dict:
     result["currency_rates"] = [item for item in currencies_data if isinstance(item, dict) and item.get("currency") in user_currencies]
 
     # Один запрос к биржевым тикетам
-    #stock_data = get_stock_prices(?)
+    user_stocks = settings.get("user_stocks", [])
+    result["stock_prices"] = get_stock_prices(user_stocks)
 
     # Создание списка карт
     pd_card_number = list_of_field(data, 'Номер карты')
