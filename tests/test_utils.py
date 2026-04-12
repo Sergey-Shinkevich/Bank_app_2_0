@@ -1,8 +1,8 @@
-from unittest.mock import MagicMock, Mock, patch
-
+from unittest.mock import Mock, patch
+import pandas as pd
 import pytest
 
-from src.utils import excel_read_to_dict, greeting, list_of_field
+from src.utils import excel_read_to_pandas, greeting, list_of_field
 
 
 @pytest.mark.parametrize(
@@ -25,67 +25,33 @@ def test_greeting(mock_datetime: Mock, hour: int, expected: str) -> None:
     mock_datetime.datetime.now.assert_called_once()
 
 
-@patch("src.utils.pd.read_excel")
-def test_excel_read_to_dict_normal(mock_read: Mock) -> None:
-    """Тест на нормальные данные"""
-    mock_df = MagicMock()
-    fake = [
-        {
-            "id": "650703",
-            "state": "EXECUTED",
-            "date": "2023-09-05T11:30:32Z",
-            "amount": "16210",
-            "currency_name": "Sol",
-            "currency_code": "PEN",
-            "from": "Счет 58803664561298323391",
-            "to": "Счет 39745660563456619397",
-            "description": "Перевод организации",
-        },
-        {
-            "id": "3598919",
-            "state": "EXECUTED",
-            "date": "2020-12-06T23:00:58Z",
-            "amount": "29740",
-            "currency_name": "Peso",
-            "currency_code": "COP",
-            "from": "Discover 3172601889670065",
-            "to": "Discover 0720428384694643",
-            "description": "Перевод с карты на карту",
-        },
-        {
-            "id": "593027",
-            "state": "CANCELED",
-            "date": "2023-07-22T05:02:01Z",
-            "amount": "30368",
-            "currency_name": "Shilling",
-            "currency_code": "TZS",
-            "from": "Visa 1959232722494097",
-            "to": "Visa 6804119550473710",
-            "description": "Перевод с карты на карту",
-        },
-    ]
-    mock_df.to_dict.return_value = fake
-    mock_read.return_value = mock_df
-    result = excel_read_to_dict("../data/transactions_excel.xlsx")
-    assert result == fake
-    mock_read.assert_called_once_with("../data/transactions_excel.xlsx")
+def test_excel_read_to_pandas_normal() -> None:
+    """Тест успешного чтения файла"""
+    mock_df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    with patch("pandas.read_excel") as mock_read:
+        mock_read.return_value = mock_df
+        result = excel_read_to_pandas("any_path.xlsx")
+        mock_read.assert_called_once_with("any_path.xlsx")
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 2
+        assert result.iloc[0]['col1'] == 1
 
 
-@patch("src.utils.pd.read_excel")
-def test_excel_read_to_dict_abnormal(mock_read: Mock) -> None:
-    """Тест на ошибку"""
-    mock_read.side_effect = Exception
-    result = excel_read_to_dict("../data/transactions_excel.xlsx")
-    assert result == []
-    mock_read.assert_called_once_with("../data/transactions_excel.xlsx")
+def test_excel_read_failure() -> None:
+    """Тест, когда файл не найден или ошибка"""
+    with patch('pandas.read_excel') as mock_read:
+        mock_read.side_effect = Exception("System Error")
+        result = excel_read_to_pandas("any_path.xlsx")
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+        assert len(result) == 0
 
-def test_list_of_field_1(normal_data: list) -> None:
-    """Тест функции на нормальные данные"""
-    result = list_of_field(normal_data, "Статус")
-    result.sort()
-    assert result == ['FAILED', 'OK']
-
-def test_list_of_field_2(abnormal_data: list) -> None:
-    """Тест функции на не правильные данные"""
-    result = list_of_field(abnormal_data, "Статус")
-    assert result == []
+@pytest.mark.parametrize("column_name, expected", [("Номер карты", [4444, 5555]), ("Валюта", ["RUB", "USD"]), ("Несуществующая", [])])
+def test_list_of_field(column_name, expected):
+    """Тесты функции list_of_field"""
+    df = pd.DataFrame({
+        "Номер карты": [4444, 5555, 4444, None],
+        "Валюта": ["RUB", "USD", "RUB", "RUB"]
+    })
+    result = list_of_field(df, column_name)
+    assert result == expected

@@ -8,7 +8,6 @@ def greeting(hour: int | None = None) -> str:
     """Возвращает приветствие на основе переданного или текущего часа"""
     if hour is None:
         hour = datetime.datetime.now().hour
-
     if 5 <= hour < 11:
         return "Доброе утро!"
     elif 11 <= hour < 18:
@@ -19,23 +18,16 @@ def greeting(hour: int | None = None) -> str:
         return "Доброй ночи!"
 
 
-def excel_read_to_dict(path: str) -> list:
-    """Функция читает Excel-файл и возвращает список словарей"""
+def excel_read_to_pandas(path: str) -> pd.DataFrame:
+    """Функция читает Excel-файл и возвращает Dataframe"""
     try:
         excel_data = pd.read_excel(path)
-        result = excel_data.to_dict(orient="records")
-        return result
+        return excel_data
     except Exception:
-        return []
+        return pd.DataFrame()
 
-def list_of_field(table: list, key: str) -> list:
+def list_of_field(df: pd.DataFrame, key: str) -> list:
     """Функция создает список уникальных значений поля таблицы"""
-    result_set = set()
-    for item in table:
-        target = item.get(key)
-        if target and str(target).lower() != 'nan':
-            result_set.add(target)
-    return list(result_set)
-
-
-
+    if df.empty or key not in df.columns:
+        return []
+    return df[key].dropna().unique().tolist()
