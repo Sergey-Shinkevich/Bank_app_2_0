@@ -1,9 +1,11 @@
-from src.utils import greeting, list_of_field, excel_read_to_pandas, get_user_settings
+from typing import Any
+
+from src.utils import greeting, list_of_field, excel_read_to_pandas, get_user_settings, get_currency_rates
 
 
 def home_page() -> dict:
     # Добавление приветствия
-    result = {"greeting": greeting()}
+    result: dict[str, Any] = {"greeting": greeting()}
 
     # Чтение данных из файлов
     data = excel_read_to_pandas("../data/operations.xlsx")
@@ -19,8 +21,12 @@ def home_page() -> dict:
     user_currencies = settings.get("user_currencies", [])
     all_needed_currencies = list(set(user_currencies + excel_currencies_foreign))
 
-    # 4. Один запрос к API за всеми курсами сразу
-    # currencies_data = get_currency_rates(all_needed_currencies)
+    # Один запрос к API за всеми курсами сразу
+    currencies_data: list[dict] = get_currency_rates(all_needed_currencies)
+    result["currency_rates"] = [item for item in currencies_data if isinstance(item, dict) and item.get("currency") in user_currencies]
+
+    # Один запрос к биржевым тикетам
+    #stock_data = get_stock_prices(?)
 
     # Создание списка карт
     pd_card_number = list_of_field(data, 'Номер карты')

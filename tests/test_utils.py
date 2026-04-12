@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch, mock_open
 import pandas as pd
 import pytest
-from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings
+from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings, get_currency_rates
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,7 @@ def test_excel_read_to_pandas_normal() -> None:
         assert result.iloc[0]['col1'] == 1
 
 
-def test_excel_read_failure() -> None:
+def test_excel_read_to_pandas_failure() -> None:
     """Тест, когда файл не найден или ошибка"""
     with patch('pandas.read_excel') as mock_read:
         mock_read.side_effect = Exception("System Error")
@@ -79,3 +79,33 @@ def test_get_user_settings_invalid_json():
     with patch("builtins.open", mock_open(read_data=mock_bad_config)):
         result = get_user_settings("bad_path.json")
     assert result == {"user_currencies": ["USD", "EUR"], "user_stocks": []}
+
+
+@patch("requests.get")
+def test_get_currency_rates_success(mock_get):
+    """Тестируем успешный ответ от API"""
+    # Имитируем структуру ответа от ExchangeRate-API
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json.return_value = {"conversion_rates":{"USD": 0.011, "EUR": 0.010}}
+    # Вызываем функцию
+    result = get_currency_rates(["USD", "EUR"])
+    # Проверяем расчет (1 / 0.011 ≈ 90.91)
+    assert len(result) == 2
+    assert result[0]["currency"] == "USD"
+    assert result[0]["rate"] > 0
+    assert isinstance(result[0]["rate"], float)
+
+
+@patch("requests.get")
+def test_get_currency_rates_server_error(mock_get):
+    """Тестируем поведение при ошибке сервера (500)"""
+    mock_get.return_value.status_code = 500
+    result = get_currency_rates(["USD"])
+    assert result == []
+
+@patch("requests.get")
+def test_get_currency_rates_exception(mock_get):
+    """Тестируем отсутствии связи"""
+    mock_get.side_effect = Exception("No internet")
+    result = get_currency_rates(["USD"])
+    assert result == []
