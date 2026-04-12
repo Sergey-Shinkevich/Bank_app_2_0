@@ -1,6 +1,5 @@
 import datetime
-
-
+import json
 import pandas as pd
 
 
@@ -31,3 +30,13 @@ def list_of_field(df: pd.DataFrame, key: str) -> list:
     if df.empty or key not in df.columns:
         return []
     return df[key].dropna().unique().tolist()
+
+def get_user_settings(path: str) -> dict:
+    """Читает пользовательские настройки из JSON-файла"""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {"user_currencies": ["USD", "EUR"], "user_stocks": []}
+
+

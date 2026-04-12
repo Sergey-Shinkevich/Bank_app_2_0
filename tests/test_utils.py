@@ -1,8 +1,7 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, mock_open
 import pandas as pd
 import pytest
-
-from src.utils import excel_read_to_pandas, greeting, list_of_field
+from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings
 
 
 @pytest.mark.parametrize(
@@ -55,3 +54,28 @@ def test_list_of_field(column_name, expected):
     })
     result = list_of_field(df, column_name)
     assert result == expected
+
+
+def test_get_user_settings_success():
+    """Тест успешного чтения настроек JSON"""
+    mock_config = '{"user_currencies": ["USD", "EUR"], "user_stocks": ["AAPL"]}'
+    with patch("builtins.open", mock_open(read_data=mock_config)):
+        result = get_user_settings("fake_path.json")
+    assert result == {"user_currencies": ["USD", "EUR"], "user_stocks": ["AAPL"]}
+    assert "user_currencies" in result
+
+
+def test_get_user_settings_file_not_found():
+    """Тест, когда файла конфигурации нет"""
+    with patch("builtins.open", side_effect=FileNotFoundError):
+        result = get_user_settings("missing_path.json")
+    assert isinstance(result, dict)
+    assert result.get("user_currencies") == ['USD', 'EUR']
+
+
+def test_get_user_settings_invalid_json():
+    """Синтаксическая ошибка в файле"""
+    mock_bad_config = '{"user_currencies": ["USD", "EUR"'  # Нет закрывающей скобки
+    with patch("builtins.open", mock_open(read_data=mock_bad_config)):
+        result = get_user_settings("bad_path.json")
+    assert result == {"user_currencies": ["USD", "EUR"], "user_stocks": []}
