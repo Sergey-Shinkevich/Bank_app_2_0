@@ -4,5 +4,5 @@
 
 # API-ключи
 EXCHANGE_RATE_API_KEY=твой_ключ_здесь
-FINANCIAL_MODELING_API_KEY=твой_ключ_здесь
+TWELVE_DATA_API_KEY=твой_ключ_здесь
 GITHUB_TOKEN = your_personal_access_token_here
