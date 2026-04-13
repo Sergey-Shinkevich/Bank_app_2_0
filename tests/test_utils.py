@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
-                       list_of_field, parse_date, filter_operations_by_date)
+                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data)
 
 
 def test_parse_date_normal() -> None:
@@ -83,6 +83,7 @@ def sample_data():
 
 
 def test_filter_operations_by_date(sample_data):
+    """тест функции filter_operations_by_date"""
     # Устанавливаем "сегодня" как 13 марта
     target_date = datetime(2020, 3, 13, 23, 59, 59)
     result = filter_operations_by_date(sample_data, target_date)
@@ -104,6 +105,52 @@ def test_list_of_field(column_name: Any, expected: Any) -> None:
     })
     result = list_of_field(df, column_name)
     assert result == expected
+
+
+@pytest.fixture
+def sample_rates():
+    """Курсы валют для теста: 1 USD = 75 RUB, 1 EUR = 80 RUB"""
+    return [
+        {"currency": "USD", "rate": 75.0},
+        {"currency": "EUR", "rate": 80.0}
+    ]
+
+
+@pytest.fixture
+def transactions_df():
+    """Тестовые транзакции с разными валютами и картами."""
+    return pd.DataFrame({
+        "Номер карты": ["*1111", "*1111", "*2222", "*1111"],
+        "Сумма операции": [
+            -100.0,  # Карта 1: Трата в рублях
+            -10.0,  # Карта 1: Трата в USD (должна стать 750)
+            -500.0,  # Карта 2: Трата в рублях
+            200.0  # Карта 1: Пополнение (должно игнорироваться)
+        ],
+        "Валюта операции": ["RUB", "USD", "RUB", "RUB"]
+    })
+
+def test_calculate_cards_data_conversion(transactions_df, sample_rates):
+    """Тест функции calculate_cards_data"""
+    cards_list = ["*1111", "*2222"]
+    result = calculate_cards_data(transactions_df, cards_list, sample_rates)
+
+    # Проверка для карты *1111: 100 (RUB) + 10 * 75 (USD) = 100 + 750 = 850
+    card1 = next(c for c in result if c["last_digits"] == "1111")
+    assert card1["total_spent"] == 850.0
+    assert card1["cashback"] == 8.5
+    # Проверка для карты *2222: Только одна трата 500
+    card2 = next(c for c in result if c["last_digits"] == "2222")
+    assert card2["total_spent"] == 500.0
+    assert card2["cashback"] == 5.0
+
+def test_calculate_cards_data_empty_or_no_match(sample_rates):
+    """Тест на пустой DF"""
+    df_empty = pd.DataFrame(columns=["Номер карты", "Сумма операции", "Валюта операции"])
+    result = calculate_cards_data(df_empty, ["*1111"], sample_rates)
+    assert len(result) == 1
+    assert result[0]["total_spent"] == 0
+
 
 
 def test_get_user_settings_success() -> None:
@@ -155,7 +202,7 @@ def test_get_currency_rates_server_error(mock_get: Mock) -> None:
 
 @patch("requests.get")
 def test_get_currency_rates_exception(mock_get: Mock) -> None:
-    """Тестируем отсутствии связи"""
+    """Тестируем отсутствие связи"""
     mock_get.side_effect = Exception("No internet")
     result = get_currency_rates(["USD"])
     assert result == []

@@ -59,24 +59,61 @@ def filter_operations_by_date(data: pd.DataFrame, date_obj: datetime.datetime) -
     filtered_df = data[(data["Дата операции"] >= start_date) & (data["Дата операции"] <= date_obj)].copy()
     return filtered_df
 
+
 def get_currency_rates(currencies: list) -> list:
     """Получает курсы валют из внешнего API относительно RUB"""
     api_key = os.getenv("EXCHANGE_RATE_API_KEY")
-    # Используем базовую валюту RUB, чтобы сразу видеть стоимость в рублях
+    if not api_key:
+        print("Ошибка: Не задан API ключ валют")
+        return []
+
     url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/RUB"
     try:
         response = requests.get(url, timeout=20)
-        if response.status_code == 200:
-            rates = response.json().get("conversion_rates", {})
-            # API дает: 1 RUB = X USD. Поэтому берем 1 / rates[currency]
-            return [
-                {"currency": c, "rate": round(1 / rates[c], 2)}
-                for c in currencies if c in rates
-            ]
+        response.raise_for_status()
+        rates = response.json().get("conversion_rates", {})
+        result = []
+        for c in currencies:
+            # Проверяем, что валюта есть в списке и её курс не равен 0
+            if c in rates and rates[c] != 0:
+                result.append({"currency": c, "rate": round(1 / rates[c], 2)})
+        return result
+
     except Exception as e:
         print(f"Ошибка API валют: {e}")
     return []
 
+def calculate_cards_data(data: pd.DataFrame, cards_list: list, rates: list) -> list:
+    """Считает общие траты и кешбэк по каждой карте с учетом конвертации валют."""
+    # Превращаем список курсов в словарь для быстрого поиска: {"USD": 75.0, ...}
+    rates_dict = {item["currency"]: item["rate"] for item in rates}
+    result_cards = []
+
+    for card_mask in cards_list:
+        # Фильтруем операции по конкретной карте
+        card_ops = data[data["Номер карты"] == card_mask]
+        total_spent_rub = 0.0
+
+        for _, op in card_ops.iterrows():
+            amount = op["Сумма операции"]
+            # Нас интересуют только траты (отрицательные значения)
+            if amount < 0:
+                currency = op["Валюта операции"]
+                amount_abs = abs(float(amount))
+
+                # Если валюта не рубли, конвертируем по курсу
+                if currency != "RUB" and currency in rates_dict:
+                    total_spent_rub += amount_abs * rates_dict[currency]
+                else:
+                    total_spent_rub += amount_abs
+
+        result_cards.append({
+            "last_digits": str(card_mask)[-4:],
+            "total_spent": round(total_spent_rub, 2),
+            "cashback": round(total_spent_rub / 100, 2)
+        })
+
+    return result_cards
 
 def get_stock_prices(stocks: list) -> list:
     api_key = os.getenv("TWELVE_DATA_API_KEY")
