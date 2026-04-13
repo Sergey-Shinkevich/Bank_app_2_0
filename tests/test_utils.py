@@ -1,9 +1,12 @@
+from datetime import datetime
 from typing import Any
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
+
 import pandas as pd
 import pytest
-from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings, get_currency_rates, get_stock_prices, parse_date
-from datetime import datetime
+
+from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
+                       list_of_field, parse_date, filter_operations_by_date)
 
 
 def test_parse_date_normal() -> None:
@@ -64,6 +67,33 @@ def test_excel_read_to_pandas_failure() -> None:
         assert isinstance(result, pd.DataFrame)
         assert result.empty
         assert len(result) == 0
+
+@pytest.fixture
+def sample_data():
+    """Создаем тестовый DataFrame с транзакциями."""
+    return pd.DataFrame({
+        "Дата операции": [
+            "01.03.2020 10:00:00",  # Начало месяца (должно войти)
+            "13.03.2020 15:00:00",  # Внутри диапазона (должно войти)
+            "15.03.2020 10:00:00",  # После указанной даты (не должно войти)
+            "28.02.2020 23:59:59"  # Прошлый месяц (не должно войти)
+        ],
+        "Сумма": [100, 200, 300, 400]
+    })
+
+
+def test_filter_operations_by_date(sample_data):
+    # Устанавливаем "сегодня" как 13 марта
+    target_date = datetime(2020, 3, 13, 23, 59, 59)
+    result = filter_operations_by_date(sample_data, target_date)
+    # Должно остаться только 2 транзакции
+    assert len(result) == 2
+    # Проверяем, что даты в результате действительно те, что мы ждем
+    dates = result["Дата операции"].dt.day.tolist()
+    assert 1 in dates
+    assert 13 in dates
+    assert 15 not in dates
+    assert 28 not in dates
 
 @pytest.mark.parametrize("column_name, expected", [("Номер карты", [4444, 5555]), ("Валюта", ["RUB", "USD"]), ("Несуществующая", [])])
 def test_list_of_field(column_name: Any, expected: Any) -> None:

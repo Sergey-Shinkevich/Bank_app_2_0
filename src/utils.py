@@ -1,7 +1,8 @@
 import datetime
 import json
-import pandas as pd
 import os
+
+import pandas as pd
 import requests
 from dotenv import load_dotenv
 
@@ -49,6 +50,14 @@ def get_user_settings(path: str) -> dict:
     except Exception:
         return {"user_currencies": ["USD", "EUR"], "user_stocks": []}
 
+
+def filter_operations_by_date(data: pd.DataFrame, date_obj: datetime.datetime) -> pd.DataFrame:
+    """Фильтрует транзакции с начала месяца до указанной даты."""
+    data["Дата операции"] = pd.to_datetime(data["Дата операции"], dayfirst=True)
+    start_date = date_obj.replace(day=1, hour=0, minute=0, second=0)
+    # Фильтруем
+    filtered_df = data[(data["Дата операции"] >= start_date) & (data["Дата операции"] <= date_obj)].copy()
+    return filtered_df
 
 def get_currency_rates(currencies: list) -> list:
     """Получает курсы валют из внешнего API относительно RUB"""

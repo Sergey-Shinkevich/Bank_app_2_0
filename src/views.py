@@ -1,7 +1,7 @@
 from typing import Any
 
-from src.utils import greeting, list_of_field, excel_read_to_pandas, get_user_settings, get_currency_rates, \
-    get_stock_prices, parse_date
+from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
+                       list_of_field, parse_date, filter_operations_by_date)
 
 
 def home_page(date_str: str) -> dict:
@@ -12,9 +12,12 @@ def home_page(date_str: str) -> dict:
     # 2. Добавление приветствия
     result: dict[str, Any] = {"greeting": greeting(date_obj.hour)}
 
-    # Чтение данных из файлов
+    # 3. Чтение данных из файлов
     data = excel_read_to_pandas("../data/operations.xlsx")
     settings = get_user_settings("../user_settings.json")
+
+    # 4. Фильтрация банковских операций по заданному временному промежутку
+    data_filtered = filter_operations_by_date(data, date_obj)
 
     # Создание списка всех валют из файла данных
     excel_currencies_all = list_of_field(data,"Валюта операции")
