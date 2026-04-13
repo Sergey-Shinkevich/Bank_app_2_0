@@ -2,8 +2,27 @@ from typing import Any
 from unittest.mock import Mock, patch, mock_open
 import pandas as pd
 import pytest
-from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings, get_currency_rates, get_stock_prices
+from src.utils import excel_read_to_pandas, greeting, list_of_field, get_user_settings, get_currency_rates, get_stock_prices, parse_date
+from datetime import datetime
 
+
+def test_parse_date_normal() -> None:
+    """Проверка корректной строки с датой"""
+    date_str = "2020-04-13 23:15:00"
+    result = parse_date(date_str)
+    assert isinstance(result, pd.Timestamp) or isinstance(result, datetime)
+    assert result.year == 2020
+    assert result.month == 4
+    assert result.day == 13
+
+def test_parse_date_abnormal():
+    """Проверка на неверный формат (должна вернуться текущая дата)"""
+    date_str = "не дата"
+    result = parse_date(date_str)
+    now = datetime.now()
+    # Проверяем, что год и месяц совпадают с текущими
+    assert result.year == now.year
+    assert result.month == now.month
 
 @pytest.mark.parametrize(
     "hour, expected",

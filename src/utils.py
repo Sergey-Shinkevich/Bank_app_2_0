@@ -7,12 +7,11 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Загружаем ключи из .env
 
-def parse_date(date_str: str) -> datetime:
+def parse_date(date_str: str) -> datetime.datetime:
     """ Преобразует строку в объект datetime. Если формат неверный, возвращает текущую дату. """
     try:
         return pd.to_datetime(date_str)
     except (ValueError, TypeError):
-        # Если пришла ерунда, логично использовать текущий момент
         return pd.to_datetime(datetime.datetime.now())
 
 def greeting(hour: int = None) -> str:
