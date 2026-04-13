@@ -115,6 +115,31 @@ def calculate_cards_data(data: pd.DataFrame, cards_list: list, rates: list) -> l
 
     return result_cards
 
+
+def get_top_transactions(data: pd.DataFrame) -> list[dict]:
+    """Возвращает 5 самых крупных по сумме операций (любых)."""
+    if data.empty:
+        return []
+
+    # Создаем копию, чтобы не портить исходный DataFrame
+    df_copy = data.copy()
+
+    # Сортируем по абсолютному значению суммы (модулю) от большего к меньшему
+    df_copy["abs_amount"] = df_copy["Сумма операции"].abs()
+    top_5_df = df_copy.sort_values(by="abs_amount", ascending=False).head(5)
+
+    top_transactions = []
+    for _, row in top_5_df.iterrows():
+        top_transactions.append({
+            "date": row["Дата операции"].strftime("%d.%m.%Y"),
+            "amount": round(float(row["Сумма операции"]), 2),
+            "category": str(row["Категория"]),
+            "description": str(row["Описание"])
+        })
+
+    return top_transactions
+
+
 def get_stock_prices(stocks: list) -> list:
     api_key = os.getenv("TWELVE_DATA_API_KEY")
     if not stocks:

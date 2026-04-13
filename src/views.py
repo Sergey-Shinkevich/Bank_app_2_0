@@ -1,7 +1,7 @@
 from typing import Any
 
 from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
-                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data)
+                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions)
 
 
 def home_page(date_str: str) -> dict:
@@ -35,16 +35,18 @@ def home_page(date_str: str) -> dict:
     # 9. Создание списка карт
     pd_card_number = list_of_field(data_filtered, 'Номер карты')
 
-    # 10. Расчет данных по картам (вызов нашей новой функции)
+    # 10. Расчет данных по картам
     result["cards"] = calculate_cards_data(data_filtered, pd_card_number, currencies_data)
 
+    # 11. Получаем ТОП-5 самых крупных трат
+    result["top_transactions"] = get_top_transactions(data_filtered)
 
+    # 12. Добавили необходимы курсы валют
+    result["currency_rates"] = [item for item in currencies_data if isinstance(item, dict) and item.get("currency") in user_currencies]
 
-    # result["currency_rates"] = [item for item in currencies_data if isinstance(item, dict) and item.get("currency") in user_currencies]
-
-    # Один запрос к биржевым тикетам
-    # user_stocks = settings.get("user_stocks", [])
-    # result["stock_prices"] = get_stock_prices(user_stocks)
+    # 13. Добавили курсы необходимых акций
+    user_stocks = settings.get("user_stocks", [])
+    result["stock_prices"] = get_stock_prices(user_stocks)
 
 
     return result

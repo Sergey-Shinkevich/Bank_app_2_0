@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
-                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data)
+                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions)
 
 
 def test_parse_date_normal() -> None:
@@ -152,7 +152,6 @@ def test_calculate_cards_data_empty_or_no_match(sample_rates):
     assert result[0]["total_spent"] == 0
 
 
-
 def test_get_user_settings_success() -> None:
     """Тест успешного чтения настроек JSON"""
     mock_config = '{"user_currencies": ["USD", "EUR"], "user_stocks": ["AAPL"]}'
@@ -206,6 +205,38 @@ def test_get_currency_rates_exception(mock_get: Mock) -> None:
     mock_get.side_effect = Exception("No internet")
     result = get_currency_rates(["USD"])
     assert result == []
+
+
+def test_get_top_transactions_sorting():
+    """Проверяем, что в ТОП-5 попадают самые крупные операции по модулю."""
+    df = pd.DataFrame({
+        "Дата операции": pd.to_datetime(["2021-12-01", "2021-12-02", "2021-12-03",
+                                         "2021-12-04", "2021-12-05", "2021-12-06"]),
+        "Сумма операции": [
+            -15000.0,  # 1-е место (самый большой расход)
+            10000.0,  # 2-е место (самый большой доход)
+            -500.0,  # 5-е место
+            2000.0,  # 3-е место
+            -1000.0,  # 4-е место
+            10.0  # Должно не попасть в ТОП
+        ],
+        "Категория": ["ЖКХ", "Зарплата", "Еда", "Переводы", "Такси", "Мелочь"],
+        "Описание": ["Квартира", "Работа", "Бургер", "Другу", "Uber", "Жвачка"]
+    })
+    result = get_top_transactions(df)
+    # Проверяем количество
+    assert len(result) == 5
+    assert result[0]["amount"] == -15000.0
+    assert result[0]["category"] == "ЖКХ"
+    assert result[1]["amount"] == 10000.0
+    # Проверяем, что самая мелкая операция (10.0) не попала в список
+    amounts = [item["amount"] for item in result]
+    assert 10.0 not in amounts
+
+def test_get_top_transactions_empty():
+    """Проверка работы с пустым DataFrame."""
+    df_empty = pd.DataFrame(columns=["Дата операции", "Сумма операции", "Категория", "Описание"])
+    assert get_top_transactions(df_empty) == []
 
 @patch("requests.get")
 def test_get_stock_prices_batch(mock_get: Mock) -> None:
