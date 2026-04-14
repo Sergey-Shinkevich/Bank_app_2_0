@@ -1,7 +1,9 @@
 import pandas as pd
 import pytest
-from src.reports import spending_by_category
 from freezegun import freeze_time
+
+from src.reports import spending_by_category
+
 
 @pytest.fixture
 def sample_transactions():
@@ -13,10 +15,10 @@ def sample_transactions():
             "14.02.2026",  # 2 месяца назад
             "14.01.2026",  # 3 месяца назад (граница)
             "14.12.2025",  # (не должно войти)
-            "15.04.2026"  # Будущее (не должно войти)
+            "15.04.2026",  # Будущее (не должно войти)
         ],
         "Категория": ["Фастфуд", "Фастфуд", "Супермаркеты", "Фастфуд", "Фастфуд", "Фастфуд"],
-        "Сумма операции": [-100, -200, -500, -300, -400, -100]
+        "Сумма операции": [-100, -200, -500, -300, -400, -100],
     }
     return pd.DataFrame(data)
 

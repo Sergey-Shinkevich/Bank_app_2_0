@@ -1,12 +1,13 @@
 import json
 from datetime import datetime
-from mypy.exportjson import Json
+
 from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 def get_top_cashback_categories(data: list[dict], year: int, month: int):
-    """ Рассчитывает кэшбэк по категориям."""
+    """Рассчитывает кэшбэк по категориям."""
     logger.info("Начало расчета категорий повышенного кэшбэка")
     cashback_result = {}
     # 1. Валидация входных параметров
@@ -22,14 +23,14 @@ def get_top_cashback_categories(data: list[dict], year: int, month: int):
         date_str = operation.get("Дата операции")
         if not date_str:
             continue
-    # 2. Проверяем формат даты и правим если не DD.MM.YYYY или пропускаем операции по исключению
+        # 2. Проверяем формат даты и правим если не DD.MM.YYYY или пропускаем операции по исключению
         try:
             clean_date = str(date_str)[:10]
             op_date = datetime.strptime(clean_date, "%d.%m.%Y")
         except (ValueError, TypeError):
             logger.error(f"Не корректный тип данных даты {date_str}")
             continue
-    # 3. Фильтрация по периоду
+        # 3. Фильтрация по периоду
         if op_date.year == year and op_date.month == month:
             category = operation.get("Категория", "Разное")
             amount = operation.get("Сумма операции", 0)

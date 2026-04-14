@@ -5,18 +5,21 @@ import os
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+
 from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 load_dotenv()  # Загружаем ключи из .env
 
+
 def parse_date(date_str: str) -> datetime.datetime:
-    """ Преобразует строку в объект datetime. Если формат неверный, возвращает текущую дату. """
+    """Преобразует строку в объект datetime. Если формат неверный, возвращает текущую дату."""
     try:
         return pd.to_datetime(date_str)
     except (ValueError, TypeError):
         logger.error(f"Не верный формат даты {date_str}")
         return pd.to_datetime(datetime.datetime.now())
+
 
 def greeting(hour: int = None) -> str:
     """Возвращает приветствие в зависимости от часа."""
@@ -35,6 +38,7 @@ def greeting(hour: int = None) -> str:
         logger.info("Приветствие: Доброй ночи!")
         return "Доброй ночи!"
 
+
 def excel_read_to_pandas(path: str) -> pd.DataFrame:
     """Функция читает Excel-файл и возвращает Dataframe"""
     logger.info("Чтение Excel файла с преобразованием в Pandas началось")
@@ -46,6 +50,7 @@ def excel_read_to_pandas(path: str) -> pd.DataFrame:
         logger.error(f"Ошибка {Exception} при чтении Excel файла с преобразованием в Pandas")
         return pd.DataFrame()
 
+
 def list_of_field(df: pd.DataFrame, key: str) -> list:
     """Функция создает список уникальных значений поля таблицы"""
     if df.empty or key not in df.columns:
@@ -54,10 +59,11 @@ def list_of_field(df: pd.DataFrame, key: str) -> list:
     logger.info(f"Создание уникальных значений поля {key} завершено")
     return df[key].dropna().unique().tolist()
 
+
 def get_user_settings(path: str) -> dict:
     """Читает пользовательские настройки из JSON-файла"""
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             logger.info("Чтение пользовательских настроек прошло удачно")
             return json.load(f)
     except Exception:
@@ -71,7 +77,7 @@ def filter_operations_by_date(data: pd.DataFrame, date_obj: datetime.datetime) -
     start_date = date_obj.replace(day=1, hour=0, minute=0, second=0)
     # Фильтруем
     filtered_df = data[(data["Дата операции"] >= start_date) & (data["Дата операции"] <= date_obj)].copy()
-    logger.info(f"Фильтрация транзакций с начала месяца до указанной даты прошла успешно")
+    logger.info("Фильтрация транзакций с начала месяца до указанной даты прошла успешно")
     return filtered_df
 
 
@@ -101,6 +107,7 @@ def get_currency_rates(currencies: list) -> list:
         print(f"Ошибка API валют: {e}")
     return []
 
+
 def calculate_cards_data(data: pd.DataFrame, cards_list: list, rates: list) -> list:
     """Считает общие траты и кешбэк по каждой карте с учетом конвертации валют."""
     # Превращаем список курсов в словарь для быстрого поиска: {"USD": 75.0, ...}
@@ -125,11 +132,13 @@ def calculate_cards_data(data: pd.DataFrame, cards_list: list, rates: list) -> l
                 else:
                     total_spent_rub += amount_abs
 
-        result_cards.append({
-            "last_digits": str(card_mask)[-4:],
-            "total_spent": round(total_spent_rub, 2),
-            "cashback": round(total_spent_rub / 100, 2)
-        })
+        result_cards.append(
+            {
+                "last_digits": str(card_mask)[-4:],
+                "total_spent": round(total_spent_rub, 2),
+                "cashback": round(total_spent_rub / 100, 2),
+            }
+        )
     logger.info("Подсчет операций по картам завершен")
     return result_cards
 
@@ -148,12 +157,14 @@ def get_top_transactions(data: pd.DataFrame) -> list[dict]:
 
     top_transactions = []
     for _, row in top_5_df.iterrows():
-        top_transactions.append({
-            "date": row["Дата операции"].strftime("%d.%m.%Y"),
-            "amount": round(float(row["Сумма операции"]), 2),
-            "category": str(row["Категория"]),
-            "description": str(row["Описание"])
-        })
+        top_transactions.append(
+            {
+                "date": row["Дата операции"].strftime("%d.%m.%Y"),
+                "amount": round(float(row["Сумма операции"]), 2),
+                "category": str(row["Категория"]),
+                "description": str(row["Описание"]),
+            }
+        )
     logger.info("Подсчет 5 самых крупных операций завершен")
     return top_transactions
 
@@ -188,10 +199,10 @@ def get_stock_prices(stocks: list) -> list:
 
 
 def excel_read_to_dict(path: str) -> list:
-    """ Читает Excel-файл и возвращает данные в виде списка словарей. """
+    """Читает Excel-файл и возвращает данные в виде списка словарей."""
     try:
         df = pd.read_excel(path)
-        data = df.to_dict(orient='records')
+        data = df.to_dict(orient="records")
         # Заменяем NaN на None
         for row in data:
             for key, value in row.items():

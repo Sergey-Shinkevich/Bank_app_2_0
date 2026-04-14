@@ -1,13 +1,23 @@
 from datetime import datetime
 from typing import Any
-from unittest.mock import Mock, mock_open, patch, MagicMock
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pandas as pd
 import pytest
 
-from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
-                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions,
-                       excel_read_to_dict)
+from src.utils import (
+    calculate_cards_data,
+    excel_read_to_dict,
+    excel_read_to_pandas,
+    filter_operations_by_date,
+    get_currency_rates,
+    get_stock_prices,
+    get_top_transactions,
+    get_user_settings,
+    greeting,
+    list_of_field,
+    parse_date,
+)
 
 
 def test_parse_date_normal() -> None:
@@ -19,6 +29,7 @@ def test_parse_date_normal() -> None:
     assert result.month == 4
     assert result.day == 13
 
+
 def test_parse_date_abnormal():
     """Проверка на неверный формат (должна вернуться текущая дата)"""
     date_str = "не дата"
@@ -27,6 +38,7 @@ def test_parse_date_abnormal():
     # Проверяем, что год и месяц совпадают с текущими
     assert result.year == now.year
     assert result.month == now.month
+
 
 @pytest.mark.parametrize(
     "hour, expected",
@@ -57,30 +69,33 @@ def test_excel_read_to_pandas_normal() -> None:
         mock_read.assert_called_once_with("any_path.xlsx")
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 2
-        assert result.iloc[0]['col1'] == 1
+        assert result.iloc[0]["col1"] == 1
 
 
 def test_excel_read_to_pandas_failure() -> None:
     """Тест, когда файл не найден или ошибка"""
-    with patch('pandas.read_excel') as mock_read:
+    with patch("pandas.read_excel") as mock_read:
         mock_read.side_effect = Exception("System Error")
         result = excel_read_to_pandas("any_path.xlsx")
         assert isinstance(result, pd.DataFrame)
         assert result.empty
         assert len(result) == 0
 
+
 @pytest.fixture
 def sample_data():
     """Создаем тестовый DataFrame с транзакциями."""
-    return pd.DataFrame({
-        "Дата операции": [
-            "01.03.2020 10:00:00",  # Начало месяца (должно войти)
-            "13.03.2020 15:00:00",  # Внутри диапазона (должно войти)
-            "15.03.2020 10:00:00",  # После указанной даты (не должно войти)
-            "28.02.2020 23:59:59"  # Прошлый месяц (не должно войти)
-        ],
-        "Сумма": [100, 200, 300, 400]
-    })
+    return pd.DataFrame(
+        {
+            "Дата операции": [
+                "01.03.2020 10:00:00",  # Начало месяца (должно войти)
+                "13.03.2020 15:00:00",  # Внутри диапазона (должно войти)
+                "15.03.2020 10:00:00",  # После указанной даты (не должно войти)
+                "28.02.2020 23:59:59",  # Прошлый месяц (не должно войти)
+            ],
+            "Сумма": [100, 200, 300, 400],
+        }
+    )
 
 
 def test_filter_operations_by_date(sample_data):
@@ -97,13 +112,13 @@ def test_filter_operations_by_date(sample_data):
     assert 15 not in dates
     assert 28 not in dates
 
-@pytest.mark.parametrize("column_name, expected", [("Номер карты", [4444, 5555]), ("Валюта", ["RUB", "USD"]), ("Несуществующая", [])])
+
+@pytest.mark.parametrize(
+    "column_name, expected", [("Номер карты", [4444, 5555]), ("Валюта", ["RUB", "USD"]), ("Несуществующая", [])]
+)
 def test_list_of_field(column_name: Any, expected: Any) -> None:
     """Тесты функции list_of_field"""
-    df = pd.DataFrame({
-        "Номер карты": [4444, 5555, 4444, None],
-        "Валюта": ["RUB", "USD", "RUB", "RUB"]
-    })
+    df = pd.DataFrame({"Номер карты": [4444, 5555, 4444, None], "Валюта": ["RUB", "USD", "RUB", "RUB"]})
     result = list_of_field(df, column_name)
     assert result == expected
 
@@ -111,25 +126,25 @@ def test_list_of_field(column_name: Any, expected: Any) -> None:
 @pytest.fixture
 def sample_rates():
     """Курсы валют для теста: 1 USD = 75 RUB, 1 EUR = 80 RUB"""
-    return [
-        {"currency": "USD", "rate": 75.0},
-        {"currency": "EUR", "rate": 80.0}
-    ]
+    return [{"currency": "USD", "rate": 75.0}, {"currency": "EUR", "rate": 80.0}]
 
 
 @pytest.fixture
 def transactions_df():
     """Тестовые транзакции с разными валютами и картами."""
-    return pd.DataFrame({
-        "Номер карты": ["*1111", "*1111", "*2222", "*1111"],
-        "Сумма операции": [
-            -100.0,  # Карта 1: Трата в рублях
-            -10.0,  # Карта 1: Трата в USD (должна стать 750)
-            -500.0,  # Карта 2: Трата в рублях
-            200.0  # Карта 1: Пополнение (должно игнорироваться)
-        ],
-        "Валюта операции": ["RUB", "USD", "RUB", "RUB"]
-    })
+    return pd.DataFrame(
+        {
+            "Номер карты": ["*1111", "*1111", "*2222", "*1111"],
+            "Сумма операции": [
+                -100.0,  # Карта 1: Трата в рублях
+                -10.0,  # Карта 1: Трата в USD (должна стать 750)
+                -500.0,  # Карта 2: Трата в рублях
+                200.0,  # Карта 1: Пополнение (должно игнорироваться)
+            ],
+            "Валюта операции": ["RUB", "USD", "RUB", "RUB"],
+        }
+    )
+
 
 def test_calculate_cards_data_conversion(transactions_df, sample_rates):
     """Тест функции calculate_cards_data"""
@@ -144,6 +159,7 @@ def test_calculate_cards_data_conversion(transactions_df, sample_rates):
     card2 = next(c for c in result if c["last_digits"] == "2222")
     assert card2["total_spent"] == 500.0
     assert card2["cashback"] == 5.0
+
 
 def test_calculate_cards_data_empty_or_no_match(sample_rates):
     """Тест на пустой DF"""
@@ -167,7 +183,7 @@ def test_get_user_settings_file_not_found() -> None:
     with patch("builtins.open", side_effect=FileNotFoundError):
         result = get_user_settings("missing_path.json")
     assert isinstance(result, dict)
-    assert result.get("user_currencies") == ['USD', 'EUR']
+    assert result.get("user_currencies") == ["USD", "EUR"]
 
 
 def test_get_user_settings_invalid_json() -> None:
@@ -183,7 +199,7 @@ def test_get_currency_rates_success(mock_get: Mock) -> None:
     """Тестируем успешный ответ от API"""
     # Имитируем структуру ответа от ExchangeRate-API
     mock_get.return_value.status_code = 200
-    mock_get.return_value.json.return_value = {"conversion_rates":{"USD": 0.011, "EUR": 0.010}}
+    mock_get.return_value.json.return_value = {"conversion_rates": {"USD": 0.011, "EUR": 0.010}}
     # Вызываем функцию
     result = get_currency_rates(["USD", "EUR"])
     # Проверяем расчет (1 / 0.011 ≈ 90.91)
@@ -200,6 +216,7 @@ def test_get_currency_rates_server_error(mock_get: Mock) -> None:
     result = get_currency_rates(["USD"])
     assert result == []
 
+
 @patch("requests.get")
 def test_get_currency_rates_exception(mock_get: Mock) -> None:
     """Тестируем отсутствие связи"""
@@ -210,20 +227,23 @@ def test_get_currency_rates_exception(mock_get: Mock) -> None:
 
 def test_get_top_transactions_sorting():
     """Проверяем, что в ТОП-5 попадают самые крупные операции по модулю."""
-    df = pd.DataFrame({
-        "Дата операции": pd.to_datetime(["2021-12-01", "2021-12-02", "2021-12-03",
-                                         "2021-12-04", "2021-12-05", "2021-12-06"]),
-        "Сумма операции": [
-            -15000.0,  # 1-е место (самый большой расход)
-            10000.0,  # 2-е место (самый большой доход)
-            -500.0,  # 5-е место
-            2000.0,  # 3-е место
-            -1000.0,  # 4-е место
-            10.0  # Должно не попасть в ТОП
-        ],
-        "Категория": ["ЖКХ", "Зарплата", "Еда", "Переводы", "Такси", "Мелочь"],
-        "Описание": ["Квартира", "Работа", "Бургер", "Другу", "Uber", "Жвачка"]
-    })
+    df = pd.DataFrame(
+        {
+            "Дата операции": pd.to_datetime(
+                ["2021-12-01", "2021-12-02", "2021-12-03", "2021-12-04", "2021-12-05", "2021-12-06"]
+            ),
+            "Сумма операции": [
+                -15000.0,  # 1-е место (самый большой расход)
+                10000.0,  # 2-е место (самый большой доход)
+                -500.0,  # 5-е место
+                2000.0,  # 3-е место
+                -1000.0,  # 4-е место
+                10.0,  # Должно не попасть в ТОП
+            ],
+            "Категория": ["ЖКХ", "Зарплата", "Еда", "Переводы", "Такси", "Мелочь"],
+            "Описание": ["Квартира", "Работа", "Бургер", "Другу", "Uber", "Жвачка"],
+        }
+    )
     result = get_top_transactions(df)
     # Проверяем количество
     assert len(result) == 5
@@ -234,20 +254,19 @@ def test_get_top_transactions_sorting():
     amounts = [item["amount"] for item in result]
     assert 10.0 not in amounts
 
+
 def test_get_top_transactions_empty():
     """Проверка работы с пустым DataFrame."""
     df_empty = pd.DataFrame(columns=["Дата операции", "Сумма операции", "Категория", "Описание"])
     assert get_top_transactions(df_empty) == []
+
 
 @patch("requests.get")
 def test_get_stock_prices_batch(mock_get: Mock) -> None:
     """Тестируем, что функция корректно обрабатывает склеенный ответ"""
     # Имитируем ответ API Twelve Data)
     mock_get.return_value.status_code = 200
-    mock_get.return_value.json.return_value = {
-        "AAPL": {"price": "150.00"},
-        "MSFT": {"price": "300.00"}
-    }
+    mock_get.return_value.json.return_value = {"AAPL": {"price": "150.00"}, "MSFT": {"price": "300.00"}}
     # Вызываем нашу функцию
     stocks = ["AAPL", "MSFT"]
     result = get_stock_prices(stocks)
@@ -259,6 +278,7 @@ def test_get_stock_prices_batch(mock_get: Mock) -> None:
     # Проверяем, что запрос ушел один
     assert mock_get.call_count == 1
 
+
 @patch("requests.get")
 def test_get_stock_prices_network_error(mock_get: Mock) -> None:
     """Тестируем поведение при падении сети"""
@@ -268,6 +288,7 @@ def test_get_stock_prices_network_error(mock_get: Mock) -> None:
 
     # Проверяем, что программа не «упала», а вернула пустой список
     assert result == []
+
 
 @patch("src.utils.pd.read_excel")
 def test_excel_read_to_dict_normal(mock_read):
