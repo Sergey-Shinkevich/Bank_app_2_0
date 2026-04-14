@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+from typing import Any
 
 import pandas as pd
 import requests
@@ -163,5 +164,23 @@ def get_stock_prices(stocks: list) -> list:
     except Exception as e:
         print(f"Ошибка при получении котировок: {e}")
         return []
+
+
+def excel_read_to_dict(path: str) -> list:
+    """ Читает Excel-файл и возвращает данные в виде списка словарей. """
+    try:
+        df = pd.read_excel(path)
+        data = df.to_dict(orient='records')
+        # Заменяем NaN на None
+        for row in data:
+            for key, value in row.items():
+                if pd.isna(value):
+                    row[key] = None
+        return data
+    except Exception as e:
+        print(f"Ошибка при чтении файла: {e}")
+        return []
+
+
 
 

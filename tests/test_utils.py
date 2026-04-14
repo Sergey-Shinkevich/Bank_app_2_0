@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Any
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock, mock_open, patch, MagicMock
 
 import pandas as pd
 import pytest
 
 from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
-                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions)
+                       list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions,
+                       excel_read_to_dict)
 
 
 def test_parse_date_normal() -> None:
@@ -267,3 +268,57 @@ def test_get_stock_prices_network_error(mock_get: Mock) -> None:
 
     # Проверяем, что программа не «упала», а вернула пустой список
     assert result == []
+
+@patch("src.utils.pd.read_excel")
+def test_excel_read_to_dict_normal(mock_read):
+    """Тест на нормальные данные"""
+    mock_df = MagicMock()
+    fake = [
+        {
+            "id": "650703",
+            "state": "EXECUTED",
+            "date": "2023-09-05T11:30:32Z",
+            "amount": "16210",
+            "currency_name": "Sol",
+            "currency_code": "PEN",
+            "from": "Счет 58803664561298323391",
+            "to": "Счет 39745660563456619397",
+            "description": "Перевод организации",
+        },
+        {
+            "id": "3598919",
+            "state": "EXECUTED",
+            "date": "2020-12-06T23:00:58Z",
+            "amount": "29740",
+            "currency_name": "Peso",
+            "currency_code": "COP",
+            "from": "Discover 3172601889670065",
+            "to": "Discover 0720428384694643",
+            "description": "Перевод с карты на карту",
+        },
+        {
+            "id": "593027",
+            "state": "CANCELED",
+            "date": "2023-07-22T05:02:01Z",
+            "amount": "30368",
+            "currency_name": "Shilling",
+            "currency_code": "TZS",
+            "from": "Visa 1959232722494097",
+            "to": "Visa 6804119550473710",
+            "description": "Перевод с карты на карту",
+        },
+    ]
+    mock_df.to_dict.return_value = fake
+    mock_read.return_value = mock_df
+    result = excel_read_to_dict("../data/transactions_excel.xlsx")
+    assert result == fake
+    mock_read.assert_called_once_with("../data/transactions_excel.xlsx")
+
+
+@patch("src.utils.pd.read_excel")
+def test_excel_read_to_dict_abnormal(mock_read):
+    """Тест на ошибку"""
+    mock_read.side_effect = Exception
+    result = excel_read_to_dict("../data/operations.xlsx")
+    assert result == []
+    mock_read.assert_called_once_with("../data/operations.xlsx")
