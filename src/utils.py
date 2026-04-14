@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-from typing import Any
 
 import pandas as pd
 import requests
@@ -180,7 +179,3 @@ def excel_read_to_dict(path: str) -> list:
     except Exception as e:
         print(f"Ошибка при чтении файла: {e}")
         return []
-
-
-
-
