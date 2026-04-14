@@ -5,6 +5,7 @@ from freezegun import freeze_time
 
 @pytest.fixture
 def sample_transactions():
+    """Фикстура для тестирования трат за три месяца по категории"""
     data = {
         "Дата операции": [
             "14.04.2026",  # Сегодня

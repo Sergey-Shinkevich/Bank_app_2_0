@@ -1,9 +1,13 @@
 from typing import Optional
 from datetime import datetime
 import pandas as pd
+from src.logger import setup_logger
 
+logger = setup_logger(__name__)
 
 def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
+    """Отчет по тратам за 3 месяца по категориям"""
+    logger.info("Начало расчета трат по категориям за 3 месяца")
     # 1. Определяем конечную дату
     if date is None:
         end_date = pd.to_datetime(datetime.now())
@@ -20,5 +24,5 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: Option
         (transactions['Дата операции'] <= end_date) &
         (transactions['Дата операции'] >= start_date)
         ]
-
+    logger.info("Окончание расчета трат по категориям за 3 месяца")
     return filtered_df

@@ -6,9 +6,8 @@ from mypy.exportjson import Json
 from src.utils import (excel_read_to_pandas, get_currency_rates, get_stock_prices, get_user_settings, greeting,
                        list_of_field, parse_date, filter_operations_by_date, calculate_cards_data, get_top_transactions)
 
-
 def home_page(date_str: str) -> Json:
-
+    """Домашняя страница"""
     # 1. Проверка, что введена аргумент функции именно формат даты.
     date_obj = parse_date(date_str)
 
