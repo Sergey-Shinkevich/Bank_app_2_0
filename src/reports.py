@@ -8,7 +8,7 @@ from src.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
+def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> Json:
     """Отчет по тратам за 3 месяца по категориям"""
     logger.info("Начало расчета трат по категориям за 3 месяца")
     # 1. Определяем конечную дату
@@ -28,4 +28,4 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: Option
         & (transactions["Дата операции"] >= start_date)
     ]
     logger.info("Окончание расчета трат по категориям за 3 месяца")
-    return filtered_df
+    return filtered_df.to_json(orient='records', force_ascii=False, indent=4)
